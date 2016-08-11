@@ -1,19 +1,246 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Hello World!</title>
-  </head>
-  <body>
-    <h1>Hello World!</h1>
-    <!-- All of the Node.js APIs are available in this renderer process. -->
-    We are using node <script>document.write(process.versions.node)</script>,
-    Chromium <script>document.write(process.versions.chrome)</script>,
-    and Electron <script>document.write(process.versions.electron)</script>.
-  </body>
+	<head>
+    	<meta charset="UTF-8">
+    	<title>Prospect Edit Suite</title>
+		<link rel="stylesheet" href="photon/css/photon.min.css">
+		<link rel="stylesheet" href="workbench.css">
+	</head>
 
-  <script>
-    // You can also require other files to run in this process
-    require('./renderer.js')
-  </script>
+	<body>
+		<div class="window">
+	    	<!-- .toolbar-header sits at the top of your app -->
+	    	<header class="toolbar toolbar-header">
+				<div class="toolbar-actions">
+					<button id="btn-entity-att" class="btn btn-mini btn-primary">Attributes</button>
+					<button id="btn-entity-tmplt" class="btn btn-mini btn-default">Templates</button>
+					<button id="btn-entity-exhbt" class="btn btn-mini btn-default">Exhibits</button>
+				    <div class="btn-group">
+						<button id="btn-add" class="btn btn-default" title="Add Entity">
+				        	<span class="icon icon-plus-squared"></span>
+				    	</button>
+						<button id="btn-edit" class="btn btn-default" title="Edit Selected Entity">
+				        	<span class="icon icon-pencil"></span>
+				    	</button>
+				    	<button id="btn-delete" class="btn btn-default" title="Delete Selected Entity">
+				        	<span class="icon icon-trash"></span>
+				    	</button>
+						<button id="btn-verify" class="btn btn-default" title="Verify Project">
+				        	<span class="icon icon-check"></span>
+				    	</button>
+				    </div>
+				</div>
+	    	</header>
+
+			<!-- Vue app here -->
+			<div id="vue-app">
+				<div id="items-column">
+					<p v-for="item in itemList" data-index="{{$index}}" @click="selectItem($index, $event)">
+						<span v-bind:class="{ 'text-select': $index == indexSelected }">{{ item.label }}</span>
+					</p>
+				</div>
+				<div id="item-edit">
+					<component :item="itemEditing" :is="editComponent">
+					</component>
+				</div>
+				<component :params="modalParams" :is="modalShowing">
+				</component>
+			</div>
+		</div>
+	</body>
+
+	<template id="vue-modal-generic">
+		<dialog id="modal-wrapper">
+			<div v-bind:class="mclass">
+				<slot name="main"></slot>
+				<div class="button-row">
+					<slot name="buttons"></slot>
+				</div>
+			</div>
+		</dialog>
+	</template>
+
+	<template id="vue-modal-null">
+		<modal :params="params"></modal>
+	</template>
+
+	<template id="vue-modal-add-id">
+		<modal :params="params" mclass="dialogmedium">
+			<div slot="main">
+				<p><i>Please choose an ID:</i></p>
+				<ul class="scroll-pane">
+					<li v-for="theItem in items" @click="selectItem($index, $event)">
+						<span v-bind:class="{ 'text-select': $index == sIndex }">{{ theItem.id }}</span>
+					</li>
+				</ul>
+			</div>
+			<div slot="buttons">
+				<button @click="clickok">OK</button>
+				<button @click="clickcancel">Cancel</button>
+			</div>
+		</modal>
+	</template>
+
+	<template id="vue-modal-select-id">
+		<modal :params="params" mclass="dialogmedium">
+			<div slot="main">
+				<p><i>Please choose an ID:</i></p>
+				<ul class="scroll-pane">
+					<li v-for="theItem in items" @click="selectItem($index, $event)">
+						<span v-bind:class="{ 'text-select': $index == sIndex }">{{ theItem.id }}</span>
+					</li>
+				</ul>
+			</div>
+			<div slot="buttons">
+				<button @click="clickok">OK</button>
+				<button @click="clickcancel">Cancel</button>
+			</div>
+		</modal>
+	</template>
+
+	<template id="vcomp-edit-null">
+		<p>Click the "New" icon, or select an item from a list and click the "Edit" or "Delete" icon</p>
+	</template>
+
+	<template id="vcomp-edit-attribute">
+		Internal ID: <input type="text" v-model="item.id" placeholder="unique_id" size=24><br/>
+		External Label: <input type="text" v-model="item.label" placeholder="Label" size=32><br/>
+		Data Type: <select v-model="item.dtype">
+			<option value="V">Vocabulary</option>
+			<option value="T">Text</option>
+			<option value="g">Tags</option>
+			<option value="N">Number</option>
+			<option value="D">Dates</option>
+			<option value="L">Lat-Lon Coordinate</option>
+			<option value="X">X-Y Coordinate</option>
+			<option value="I">Image</option>
+			<option value="l">Link-To (URL)</option>
+			<option value="S">Sound (URL to audio file)</option>
+			<option value="Y">YouTube code</option>
+			<option value="x">Transcript (URL to file)</option>
+			<option value="t">Timecode</option>
+			<option value="P">Pointer</option>
+			<option value="J">Join</option>
+		</select>
+		Privacy: <select v-model="item.privacy">
+			<option value="o">Public</option>
+			<option value="p">Private</option>
+		</select><br/>
+		Delimiter: <input type="text" v-model="item.delim" size=1>
+		Can filter: <input type="checkbox" v-model="item.canFilter">
+		<br/>
+		<textarea v-model="item.hint" placeholder="hint text" rows="3" cols="50"></textarea>
+
+		<div v-if="item.dtype === 'V'">	<!-- Vocab -->
+			<input type="text" v-model="newTerm" size=24>
+			<button class="btn btn-default" v-on:click="addTerm">Add Term</button>
+			<button class="btn btn-default" v-on:click="autoColors">Auto Colors</button>
+			<br/>
+			<ul class="select-pane">
+				<li v-for="thisLegend in item.vLegend" track-by="$index">
+					{{ thisLegend.term }}:
+					<span title="Click to select color" class="viz-icon" style="background-color: {{ thisLegend.color }}" v-on:click="setLegendViz($index, -1)"></span>
+					<div class="btn-group">
+						<button class="btn btn-default" title="Edit Entry" v-on:click="doLegendEdit($index, -1)">
+							<span class="icon icon-pencil"></span>
+						</button>
+						<button class="btn btn-default" title="Move Up" v-on:click="doLegendUp($index, -1)">
+							<span class="icon icon-up"></span>
+						</button>
+						<button class="btn btn-default" title="Move Down" v-on:click="doLegendDown($index, -1)">
+							<span class="icon icon-down"></span>
+						</button>
+						<button class="btn btn-default" title="Move Delete" v-on:click="doLegendDel($index, -1)">
+							<span class="icon icon-trash"></span>
+						</button>
+					</div>
+				</li>
+			</ul>
+		</div>
+
+		<div v-if="item.dtype === 'T'">	<!-- Text -->
+			<button class="btn btn-default" v-on:click="addEntry">Add Entry</button>
+			<button class="btn btn-default" v-on:click="autoColors">Auto Colors</button>
+
+		</div>
+
+		<div v-if="item.dtype === 'N'">	<!-- Number -->
+		</div>
+
+		<div v-if="item.dtype === 'D'">	<!-- Number -->
+		</div>
+
+		<br/>
+		<button class="btn btn-mini btn-default" v-on:click="cancel">Cancel</button>
+		<button class="btn btn-mini btn-default" v-on:click="save">Save</button>
+	</template>
+
+	<template id="vcomp-edit-template">
+		Internal ID: <input type="text" v-model="item.id" placeholder="unique_id" size=24><br/>
+		External Label: <input type="text" v-model="item.label" placeholder="Label" size=32><br/>
+		Dependent Template: <input type="checkbox" v-model="item.dependent">
+		<br/>
+		<textarea v-model="item.hint" placeholder="hint text" rows="3" cols="50"></textarea>
+		<br/>
+		Record labels provided by: <select v-model="item.labelID">
+			<option v-for="tAttID in item.textAttIDs" track-by="$index">
+				{{ tAttID }}
+			</option>
+		</select>
+		<br/>
+		<ul class="select-pane">
+			<li v-for="thisAtt in item.atts" track-by="$index">
+				{{ thisAtt.id }}:  On Record page? <input type="checkbox" v-model="thisAtt.display">
+				<button v-if="thisAtt.canjoin" v-on:click="setJoin($index)">Set Join</button> {{ thisAtt.join }}
+				<div class="btn-group">
+					<button class="btn btn-mini" v-on:click="upAttribute($index)">
+						<span class="icon icon-up-open"></span>
+					</button>
+					<button class="btn btn-mini" v-on:click="downAttribute($index)">
+						<span class="icon icon-down-open"></span>
+					</button>
+					<button class="btn btn-mini" v-on:click="delAttribute($index)">
+						<span class="icon icon-trash"></span>
+					</button>
+				</div>
+			</li>
+		</ul>
+		<button class="btn btn-mini btn-default" v-on:click="addAttribute">Add Attribute</button>
+		<br/>
+		<b>Playback Widgets</b><br/>
+		YouTube: <select v-model="item.ytID">
+			<option v-for="thisID in item.youTubeIDs" track-by="$index" v-bind:value="thisID">
+				{{ thisID }}
+			</option>
+		</select>
+		Audio: <select v-model="item.scID">
+			<option v-for="thisID in item.audioIDs" track-by="$index" v-bind:value="thisID">
+				{{ thisID }}
+			</option>
+		</select>
+		<br/>
+		Transcript 1: <select v-model="item.t1ID">
+			<option v-for="thisID in item.transcriptIDs" track-by="$index" v-bind:value="thisID">
+				{{ thisID }}
+			</option>
+		</select>
+		Transcript 2: <select v-model="item.t2ID">
+			<option v-for="thisID in item.transcriptIDs" track-by="$index" v-bind:value="thisID">
+				{{ thisID }}
+			</option>
+		</select>
+		Timecodes: <select v-model="item.tcID">
+			<option v-for="thisID in item.timeCodeIDs" track-by="$index" v-bind:value="thisID">
+				{{ thisID }}
+			</option>
+		</select>
+		<br/>
+		<button class="btn btn-mini btn-default" v-on:click="cancel">Cancel</button>
+		<button class="btn btn-mini btn-default" v-on:click="save">Save</button>
+	</template>
+
+	<script>
+		require('./renderer.js');
+	</script>
+
 </html>

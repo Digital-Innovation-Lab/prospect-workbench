@@ -1,0 +1,97 @@
+/* CSS for Prospect Workbench
+ */
+
+body {
+    overflow: auto;
+	line-height: 1.1;
+	font-size: 12px;
+	font-family: sans-serif;
+}
+
+body p {
+	margin: 0px;
+	padding: 2px;
+}
+
+.text-select {
+	font-weight: bold;
+}
+
+dialog {
+	border: 1px grey solid;
+	padding: 20px;
+	box-shadow: 10px 10px 5px -7px rgba(0,0,0,0.75);
+}
+
+dialog div.dialogmedium {
+	width: 350px;
+}
+
+dialog div.dialogwide {
+	width: 500px;
+}
+
+dialog div.button-row {
+	white-space: nowrap;	/* don't allow controls to wrap to new line */
+}
+
+dialog div.button-row div, button, input {
+	margin: 2px;
+}
+
+ul.select-pane {
+	margin-left: 2px;
+	padding-left: 0;
+	overflow-y: scroll;
+	max-height: 200px;
+}
+
+ul.select-pane > li {
+	margin-left: 0;
+	padding-left: 0;
+}
+
+#vue-app {
+	display: flex;
+	flex-direction: row;
+}
+
+	/* Column showing list of names of currently selected items */
+#items-column {
+	flex: 0 0 200px;
+
+	border: 1px dotted black;
+	overflow-y: scroll;
+	padding: 3px;
+}
+
+#items-column > p {
+	line-height: 1.1em;
+	font-size: 12px;
+	margin: 2px;
+	padding: 0;
+}
+
+	/* Area for editing item */
+#item-edit {
+	padding: 2px;
+	flex-grow: 1;
+	min-width: 400px;
+}
+
+#item-edit input {
+	margin: 3px;
+}
+
+	/* For creating "color swatch" buttons */
+span.viz-icon {
+	cursor: pointer;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	margin: 0;
+
+	border: black dotted 1px;
+	display: inline-block;
+	vertical-align: middle;
+}
