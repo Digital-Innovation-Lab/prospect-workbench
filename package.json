@@ -1,14 +1,14 @@
 {
-  "name": "electron-quick-start",
+  "name": "Prospect Workshop",
   "version": "1.0.0",
-  "description": "A minimal Electron application",
+  "description": "Workshop for creating and editing Prospect entity definitions/configurations",
   "main": "main.js",
   "scripts": {
     "start": "electron ."
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/electron/electron-quick-start.git"
+    "url": "git+https://github.com/Digital-Innovation-Lab/prospect-workbench.git"
   },
   "author": "GitHub",
   "license": "CC0-1.0",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "dexie": "^1.4.1",
-	"vue": "^1.0"
+    "electron-prebuilt": "^1.3.3",
+    "vue": "^1.0"
   }
 }

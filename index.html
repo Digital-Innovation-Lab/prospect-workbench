@@ -98,6 +98,37 @@
 		</modal>
 	</template>
 
+	<template id="vue-modal-move-vocab">
+		<modal :params="params" mclass="dialogmedium">
+			<div slot="main">
+				<div v-if="ischild">
+					<p>What to do with this 2nd-level term?</p>
+					<input type="radio" value="up" v-model="action"> Move to top level<br/>
+					<input type="radio" value="over" v-model="action"> Make a child of
+					<select v-model="parent">
+						<option v-for="thisTerm in topterms" track-by="$index">
+							{{ thisTerm }}
+						</option>
+					</select>
+				</div>
+				<div v-if="!ischild">
+					<p>Move this Term so it becomes a child of</p><br/>
+					<select v-model="parent">
+						<option v-for="thisTerm in topterms" track-by="$index">
+							{{ thisTerm }}
+						</option>
+					</select>
+					<input type="radio" value="keep" v-model="keepcolor"> Keep visual config
+					<input type="radio" value="clear" v-model="keepcolor"> Clear visual config
+				</div>
+			</div>
+			<div slot="buttons">
+				<button @click="clickok">OK</button>
+				<button @click="clickcancel">Cancel</button>
+			</div>
+		</modal>
+	</template>
+
 	<template id="vcomp-edit-null">
 		<p>Click the "New" icon, or select an item from a list and click the "Edit" or "Delete" icon</p>
 	</template>
@@ -137,12 +168,15 @@
 			<button class="btn btn-default" v-on:click="autoColors">Auto Colors</button>
 			<br/>
 			<ul class="select-pane">
-				<li v-for="thisLegend in item.vLegend" track-by="$index">
-					{{ thisLegend.term }}:
-					<span title="Click to select color" class="viz-icon" style="background-color: {{ thisLegend.color }}" v-on:click="setLegendViz($index, -1)"></span>
+				<li v-for="thisTerm in item.vLegend" track-by="$index">
+					{{ thisTerm.term }}:
+					<span title="Click to select color" class="viz-icon" style="background-color: {{ thisTerm.color }}" v-on:click="setLegendViz($index, -1)"></span>
 					<div class="btn-group">
 						<button class="btn btn-default" title="Edit Entry" v-on:click="doLegendEdit($index, -1)">
 							<span class="icon icon-pencil"></span>
+						</button>
+						<button class="btn btn-default" title="Make Child/Parent" v-on:click="doLegendMove($index, -1)">
+							<span class="icon icon-switch"></span>
 						</button>
 						<button class="btn btn-default" title="Move Up" v-on:click="doLegendUp($index, -1)">
 							<span class="icon icon-up"></span>
@@ -154,14 +188,36 @@
 							<span class="icon icon-trash"></span>
 						</button>
 					</div>
+					<ul>
+						<li v-for="subTerm in thisTerm.x" track-by="$index">
+							{{ subTerm.term }}:
+							<span title="Click to select color" class="viz-icon" style="background-color: {{ subTerm.color }}" v-on:click="setLegendViz($index, -1)"></span>
+							<div class="btn-group">
+								<button class="btn btn-default" title="Edit Entry" v-on:click="doLegendEdit($parent.$index, $index)">
+									<span class="icon icon-pencil"></span>
+								</button>
+								<button class="btn btn-default" title="Make Child/Parent" v-on:click="doLegendMove($parent.$index, $index)">
+									<span class="icon icon-switch"></span>
+								</button>
+								<button class="btn btn-default" title="Move Up" v-on:click="doLegendUp($parent.$index, $index)">
+									<span class="icon icon-up"></span>
+								</button>
+								<button class="btn btn-default" title="Move Down" v-on:click="doLegendDown($parent.$index, $index)">
+									<span class="icon icon-down"></span>
+								</button>
+								<button class="btn btn-default" title="Move Delete" v-on:click="doLegendDel($parent.$index, $index)">
+									<span class="icon icon-trash"></span>
+								</button>
+							</div>
+						</li>
+					</ul>
 				</li>
 			</ul>
 		</div>
 
 		<div v-if="item.dtype === 'T'">	<!-- Text -->
-			<button class="btn btn-default" v-on:click="addEntry">Add Entry</button>
+			<button class="btn btn-default" v-on:click="addTerm">Add Entry</button>
 			<button class="btn btn-default" v-on:click="autoColors">Auto Colors</button>
-
 		</div>
 
 		<div v-if="item.dtype === 'N'">	<!-- Number -->

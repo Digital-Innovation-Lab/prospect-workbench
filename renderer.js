@@ -134,6 +134,44 @@ var VModalSelectID = Vue.extend({
 	} // methods()
 });
 
+	// PURPOSE: Modal to move Term up/down hierarchy
+var VModalMoveVocab = Vue.extend({
+	props: {
+		params: Object
+	},
+	data: function () {
+    	return { ischild: false, action: 'up', parent: '', topterms: [], keepcolor: 'keep' }
+	},
+	template: '#vue-modal-move-vocab',
+	components: {
+    	modal: VModalGeneric
+	},
+		// Need to pass in these params:
+		//	ischild = true if already a child Term
+		//	topterms = array of 1st-level Terms (other than current parent)
+	created: function() {
+		this.params.createDialog = true;
+		this.ischild = this.params.ischild;
+		this.topterms = this.params.topterms;
+	},
+		// Messages sent by DOM elements
+	methods: {
+		clickok: function()
+		{
+			if (this.ischild) {
+				this.params.success(this.action, this.parent, this.keepcolor);
+			} else {
+				this.params.success(this.parent, this.keepcolor);
+			}
+			this.$dispatch('close-modal');
+		},
+		clickcancel: function()
+		{
+			this.$dispatch('close-modal');
+		}
+	} // methods()
+});
+
 	// Null placeholder Entity Edit Component
 var VCompEditNull = Vue.extend({
 	props: {
@@ -155,6 +193,7 @@ var VCompEditAttribute = Vue.extend({
     	return { newTerm: '' }
 	},
 	methods: {
+			// PURPOSE: Add Term with grey color to current Vocabulary Legend
 		addTerm: function()
 		{
 			if (this.newTerm.length > 0) {
@@ -162,6 +201,63 @@ var VCompEditAttribute = Vue.extend({
 				this.newTerm = '';
 			}
 		}, // addTerm()
+			// PURPOSE: Allow Vocab term to become 1st-level or child of another
+		doLegendMove: function(i1, i2)
+		{
+			let self=this;
+
+				// Is it a top-level Term?
+			if (i2 == -1) {
+				let thisTerm = this.item.vLegend[i1].term;
+				vApp.modalParams.success = function(parent, keepcolor) {
+					let newParent = self.item.vLegend.find(function(aTerm) { return aTerm.term == parent; });
+						// Remove from array at top-level
+					thisTerm = self.item.vLegend.splice(i1, 1);
+						// Modify color?
+					if (!keepcolor) {
+						thisTerm.color = '';
+					}
+					delete thisTerm.x;
+					newParent.x.push(thisTerm[0]);
+				}
+				vApp.modalParams.topterms = [];
+				this.item.vLegend.forEach(function(aTerm) {
+					if (aTerm.term != thisTerm) {
+						vApp.modalParams.topterms.push(aTerm.term);
+					}
+				});
+			} else {	// Is it already a child Term?
+				let thisTerm = this.item.vLegend[i1].x[i2];
+				vApp.modalParams.success = function(action, parent, keepcolor) {
+					if (action == 'up') {
+							// Remove from parent's list
+						thisTerm = self.item.vLegend[i1].x.splice(i2, 1);
+						if (thisTerm.color == '') {
+							thisTerm.color = '#777777';
+						}
+						thisTerm.x = [];
+						self.item.vLegend.push(thisTerm[0]);
+					} else {	// Move to another parent
+						let newParent = self.item.vLegend.find(function(aTerm) { return aTerm.term == parent; });
+							// Remove from parent's list
+						thisTerm = self.item.vLegend[i1].x.splice(i2, 1);
+						if (!keepcolor) {
+							thisTerm.color = '';
+						}
+						newParent.x.push(thisTerm[0]);
+					}
+				}
+				vApp.modalParams.topterms = [];
+				this.item.vLegend.forEach(function(aTerm, index) {
+						// Collect all Terms except this Term's parent
+					if (i1 != index) {
+						vApp.modalParams.topterms.push(aTerm.term);
+					}
+				});
+			} // 2ndary-level Term
+			vApp.modalParams.ischild = (i2 != -1);
+			vApp.setModal('modalMoveVocab');
+		},
 		doLegendUp: function(i1, i2)
 		{
 			let theArray, i=i1;
@@ -249,6 +345,11 @@ console.log("Edit legend "+i1);
 		setLegendViz: function(i1, i2)
 		{
 console.log("Set legend "+i1);
+		},
+			// PURPOSE: Enable user to automatically assign colors
+		autoColors: function()
+		{
+console.log("Auto colors");
 		},
 		cancel: function()
 		{
@@ -416,7 +517,8 @@ var vApp = new Vue({
 		editTmplt: VCompEditTemplate,
 		editNull: VCompEditNull,
 		modalNull: VModalNull,
-		modalSelectID: VModalSelectID
+		modalSelectID: VModalSelectID,
+		modalMoveVocab: VModalMoveVocab
 	},
 		// Messages invoked by DOM elements
 	methods: {

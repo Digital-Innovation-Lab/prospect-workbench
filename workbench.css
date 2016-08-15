@@ -51,6 +51,17 @@ ul.select-pane > li {
 	padding-left: 0;
 }
 
+	/* Secondary-level entries */
+ul.select-pane > li > ul {
+	margin-left: 10px;
+	padding-left: 0;
+}
+
+ul.select-pane > li > ul > li {
+	margin-left: 0;
+	padding-left: 0;
+}
+
 #vue-app {
 	display: flex;
 	flex-direction: row;
